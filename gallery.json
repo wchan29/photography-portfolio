@@ -1,0 +1,32 @@
+{
+  "groups": [
+    {
+      "id": "4e558854-47c5-4302-be42-d7f4e9f9c3b2",
+      "name": "Left block",
+      "containerClass": "flex w-full md:w-1/2 flex-wrap"
+    },
+    {
+      "id": "c94393f8-50b5-4f80-b28c-d2694a8c8236",
+      "name": "Right block",
+      "containerClass": "flex w-full md:w-1/2 flex-wrap"
+    }
+  ],
+  "items": [
+    {
+      "id": "9eb470f4-6e56-41e9-84bf-1dccc82f6b44",
+      "src": "assets/DSC01774-Edit-2.jpg",
+      "alt": "DSC01774 Edit 2",
+      "groupId": "4e558854-47c5-4302-be42-d7f4e9f9c3b2",
+      "widthClass": "w-full",
+      "paddingClass": "p-1"
+    },
+    {
+      "id": "8927afa0-53d8-4606-b07e-474ba6e61485",
+      "src": "assets/P1190470.jpg",
+      "alt": "P1190470",
+      "groupId": "c94393f8-50b5-4f80-b28c-d2694a8c8236",
+      "widthClass": "w-full",
+      "paddingClass": "p-1"
+    }
+  ]
+}

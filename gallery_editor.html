@@ -1,0 +1,1056 @@
+<!-- Generated using ChatGPT 5.2 -->
+
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>Interactive Gallery Editor</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js"></script>
+
+    <style>
+      .dragging {
+        opacity: 0.5;
+      }
+      .drop-target {
+        outline: 2px dashed rgba(0, 0, 0, 0.25);
+        outline-offset: 4px;
+      }
+
+      /* Group drop highlight */
+      .group-drop-target {
+        outline: 2px dashed rgba(0, 0, 0, 0.35);
+        outline-offset: 6px;
+        background: rgba(0, 0, 0, 0.03);
+      }
+
+      /* Preview tile drop highlight */
+      .tile-drop-target {
+        outline: 2px dashed rgba(0, 0, 0, 0.35);
+        outline-offset: 4px;
+      }
+
+      /* Fade in for images */
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      .animate-fade-in {
+        animation: fadeIn 0.6s ease forwards;
+      }
+    </style>
+  </head>
+
+  <body class="bg-white text-neutral-900">
+    <div class="max-w-screen-xl mx-auto px-4 py-8">
+      <div class="flex flex-col gap-6">
+        <header class="flex flex-col gap-2">
+          <h1 class="text-3xl font-bold">Interactive Gallery Editor</h1>
+          <p class="text-sm text-neutral-600">
+            Drag image cards onto a Group card to move them. Also drag tiles inside the Live preview to move and reorder
+            inside groups.
+          </p>
+        </header>
+
+        <!-- Controls -->
+        <section class="rounded-xl border border-neutral-200 p-4">
+          <div class="flex flex-col lg:flex-row gap-4 lg:items-end">
+            <div class="flex-1">
+              <label class="block text-sm font-semibold mb-2">Add images</label>
+
+              <div class="flex flex-col gap-3">
+                <div class="flex flex-col sm:flex-row gap-3 sm:items-center">
+                  <input
+                    id="fileInput"
+                    class="block w-full text-sm text-neutral-700 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-neutral-900 file:text-white hover:file:opacity-90"
+                    type="file"
+                    accept="image/*"
+                    multiple
+                  />
+                  <span class="text-xs text-neutral-500 whitespace-nowrap">Pick files</span>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-3 sm:items-center">
+                  <input
+                    id="folderInput"
+                    class="block w-full text-sm text-neutral-700 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-neutral-900 file:text-white hover:file:opacity-90"
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    webkitdirectory
+                  />
+                  <span class="text-xs text-neutral-500 whitespace-nowrap">Pick folder</span>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-3 sm:items-center">
+                  <button
+                    id="addSelectedBtn"
+                    class="rounded-lg bg-neutral-900 text-white px-4 py-2 text-sm font-semibold hover:opacity-90"
+                    type="button"
+                  >
+                    Add selected
+                  </button>
+
+                  <p class="text-xs text-neutral-600">
+                    Paths are normalized to begin with <span class="font-mono">assets/</span>.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-3">
+              <button
+                id="exportBtn"
+                class="rounded-lg border border-neutral-300 px-4 py-2 text-sm font-semibold hover:bg-neutral-50"
+                type="button"
+              >
+                Export JSON
+              </button>
+              <label
+                class="rounded-lg border border-neutral-300 px-4 py-2 text-sm font-semibold hover:bg-neutral-50 cursor-pointer text-center"
+              >
+                Import JSON
+                <input id="importInput" type="file" accept="application/json" class="hidden" />
+              </label>
+              <button
+                id="resetBtn"
+                class="rounded-lg border border-red-300 text-red-700 px-4 py-2 text-sm font-semibold hover:bg-red-50"
+                type="button"
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Group manager -->
+        <section class="rounded-xl border border-neutral-200 p-4">
+          <div class="flex items-center justify-between gap-3">
+            <h2 class="text-xl font-semibold">Groups</h2>
+            <div class="flex items-center gap-2">
+              <input
+                id="newGroupName"
+                class="w-56 rounded-lg border border-neutral-200 px-3 py-2 text-sm"
+                placeholder="New group name"
+              />
+              <button
+                id="addGroupBtn"
+                class="rounded-lg bg-neutral-900 text-white px-4 py-2 text-sm font-semibold hover:opacity-90"
+                type="button"
+              >
+                Add group
+              </button>
+            </div>
+          </div>
+
+          <p class="text-sm text-neutral-600 mt-2">
+            Drop an image card onto a group, or drop preview tiles into a group container in the Live preview.
+          </p>
+
+          <div id="groupList" class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-3"></div>
+        </section>
+
+        <!-- Editor list -->
+        <section class="rounded-xl border border-neutral-200 p-4">
+          <div class="flex items-center justify-between gap-3">
+            <h2 class="text-xl font-semibold">Images</h2>
+            <p class="text-sm text-neutral-600">
+              Items: <span id="countLabel" class="font-semibold">0</span>
+            </p>
+          </div>
+
+          <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3" id="editorList"></div>
+        </section>
+
+        <!-- Live preview -->
+        <section class="rounded-xl border border-neutral-200 p-4">
+          <div class="flex items-center justify-between gap-3">
+            <h2 class="text-xl font-semibold">Live preview</h2>
+            <p class="text-sm text-neutral-600">
+              Drag tiles between groups and reorder by dropping onto another tile.
+            </p>
+          </div>
+
+          <div class="container mx-auto mt-4">
+            <h3 class="text-2xl pt-4 pb-4 font-bold">PORTFOLIO</h3>
+            <section class="text-neutral-700">
+              <div class="container w-full">
+                <div class="flex flex-wrap w-full" id="galleryRoot"></div>
+              </div>
+            </section>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <script>
+      const STORAGE_KEY_ITEMS = "gallery_items_v4";
+      const STORAGE_KEY_GROUPS = "gallery_groups_v2";
+
+      const DEFAULT_WIDTH = "w-full";
+      const DEFAULT_PADDING = "p-1";
+      const DEFAULT_GROUP_CONTAINER_CLASS = "flex w-full md:w-1/2 flex-wrap";
+
+      const DEFAULT_GROUPS = [
+        { id: crypto.randomUUID(), name: "Left block", containerClass: DEFAULT_GROUP_CONTAINER_CLASS },
+        { id: crypto.randomUUID(), name: "Right block", containerClass: DEFAULT_GROUP_CONTAINER_CLASS },
+      ];
+
+      const DEFAULT_ITEMS = [];
+
+      let groups = loadGroups();
+      let items = loadItems();
+
+      // Drag state
+      let dragItemId = null;     // stable id for dragged item
+      let dragFromEditorIndex = null; // used only for editor reorder fallback
+
+      function initFancybox() {
+        if (window.Fancybox) {
+          Fancybox.bind('[data-fancybox="gallery"]', {});
+        }
+      }
+
+      function sanitizeClassString(s) {
+        return String(s || "")
+          .replaceAll('"', "")
+          .replaceAll("'", "")
+          .replaceAll("<", "")
+          .replaceAll(">", "")
+          .trim();
+      }
+
+      function ensureId(x) {
+        const v = typeof x.id === "string" ? x.id : "";
+        return v ? v : crypto.randomUUID();
+      }
+
+      function normalizeGroup(g) {
+        return {
+          id: String(g.id || crypto.randomUUID()),
+          name: typeof g.name === "string" && g.name.trim() ? g.name.trim() : "Group",
+          containerClass:
+            sanitizeClassString(g.containerClass || DEFAULT_GROUP_CONTAINER_CLASS) || DEFAULT_GROUP_CONTAINER_CLASS,
+        };
+      }
+
+      function normalizeItem(x) {
+        let groupId = typeof x.groupId === "string" ? x.groupId : "";
+        if (!groups.some((g) => g.id === groupId)) {
+          groupId = groups[0]?.id || "";
+        }
+
+        return {
+          id: ensureId(x),
+          src: String(x.src),
+          alt: typeof x.alt === "string" ? x.alt : "",
+          groupId,
+          widthClass: sanitizeClassString(x.widthClass || DEFAULT_WIDTH) || DEFAULT_WIDTH,
+          paddingClass: sanitizeClassString(x.paddingClass || DEFAULT_PADDING) || DEFAULT_PADDING,
+        };
+      }
+
+      function loadGroups() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY_GROUPS);
+          if (!raw) return DEFAULT_GROUPS.map(normalizeGroup);
+          const parsed = JSON.parse(raw);
+          if (!Array.isArray(parsed) || parsed.length === 0) return DEFAULT_GROUPS.map(normalizeGroup);
+          return parsed.map(normalizeGroup);
+        } catch {
+          return DEFAULT_GROUPS.map(normalizeGroup);
+        }
+      }
+
+      function saveGroups() {
+        localStorage.setItem(STORAGE_KEY_GROUPS, JSON.stringify(groups, null, 2));
+      }
+
+      function loadItems() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY_ITEMS);
+          if (!raw) return [...DEFAULT_ITEMS].map(normalizeItem);
+
+          const parsed = JSON.parse(raw);
+
+          // Legacy array
+          if (Array.isArray(parsed)) {
+            return parsed
+              .filter((x) => x && typeof x.src === "string")
+              .map((x) => normalizeItem({ ...x, groupId: groups[0]?.id || "" }));
+          }
+
+          // New format: { groups, items }
+          if (parsed && Array.isArray(parsed.groups) && Array.isArray(parsed.items)) {
+            groups = parsed.groups.map(normalizeGroup);
+            saveGroups();
+            return parsed.items.filter((x) => x && typeof x.src === "string").map(normalizeItem);
+          }
+
+          return [...DEFAULT_ITEMS].map(normalizeItem);
+        } catch {
+          return [...DEFAULT_ITEMS].map(normalizeItem);
+        }
+      }
+
+      function saveItems() {
+        localStorage.setItem(STORAGE_KEY_ITEMS, JSON.stringify(items, null, 2));
+      }
+
+      function stripExt(name) {
+        const i = name.lastIndexOf(".");
+        return i >= 0 ? name.slice(0, i) : name;
+      }
+
+      function basename(path) {
+        const s = String(path);
+        const parts = s.split("/");
+        return parts[parts.length - 1] || s;
+      }
+
+      function escapeHtml(s) {
+        return String(s)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function findIndexById(id) {
+        return items.findIndex((it) => it.id === id);
+      }
+
+      // Insert moved item at a specific index in items array
+      function moveItemToIndex(itemId, newIndex) {
+        const fromIndex = findIndexById(itemId);
+        if (fromIndex < 0) return;
+
+        const [moved] = items.splice(fromIndex, 1);
+
+        let idx = Number(newIndex);
+        if (!Number.isFinite(idx)) idx = items.length;
+
+        // if removing earlier shifts indices
+        if (fromIndex < idx) idx = idx - 1;
+        if (idx < 0) idx = 0;
+        if (idx > items.length) idx = items.length;
+
+        items.splice(idx, 0, moved);
+      }
+
+      // Put item at end of a group, in terms of items array order
+      function moveItemToEndOfGroup(itemId, groupId) {
+        const fromIndex = findIndexById(itemId);
+        if (fromIndex < 0) return;
+
+        const [moved] = items.splice(fromIndex, 1);
+        moved.groupId = groupId;
+
+        // Find last index of any item in that group (after removal)
+        let last = -1;
+        for (let i = 0; i < items.length; i++) {
+          if (items[i].groupId === groupId) last = i;
+        }
+
+        const insertAt = last >= 0 ? last + 1 : items.length;
+        items.splice(insertAt, 0, moved);
+      }
+
+      // Put item before another item (and adopt that target's group)
+      function moveItemBeforeTarget(itemId, targetId) {
+        const fromIndex = findIndexById(itemId);
+        const targetIndex = findIndexById(targetId);
+        if (fromIndex < 0 || targetIndex < 0) return;
+        if (itemId === targetId) return;
+
+        const targetGroupId = items[targetIndex].groupId;
+        const [moved] = items.splice(fromIndex, 1);
+        moved.groupId = targetGroupId;
+
+        let insertAt = targetIndex;
+        if (fromIndex < targetIndex) insertAt = targetIndex - 1;
+        if (insertAt < 0) insertAt = 0;
+
+        items.splice(insertAt, 0, moved);
+      }
+
+      // -------- Groups UI
+      function renderGroups() {
+        const root = document.getElementById("groupList");
+
+        root.innerHTML = groups
+          .map((g, idx) => {
+            const itemCount = items.filter((it) => it.groupId === g.id).length;
+
+            return `
+            <div
+              class="rounded-xl border border-neutral-200 p-3 bg-white"
+              data-group-drop="true"
+              data-group-id="${escapeHtml(g.id)}"
+            >
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <p class="text-sm font-semibold">Group ${idx + 1}</p>
+                  <p class="text-xs text-neutral-600 mt-1">Drop image cards here</p>
+                  <p class="text-xs text-neutral-600 mt-1">Items: <span class="font-semibold">${itemCount}</span></p>
+                </div>
+                <div class="flex gap-2">
+                  <button class="text-xs font-semibold hover:underline" data-action="group-up" data-index="${idx}" type="button">Up</button>
+                  <button class="text-xs font-semibold hover:underline" data-action="group-down" data-index="${idx}" type="button">Down</button>
+                  <button class="text-xs font-semibold text-red-700 hover:underline" data-action="group-delete" data-index="${idx}" type="button">Delete</button>
+                </div>
+              </div>
+
+              <label class="block text-xs font-semibold text-neutral-700 mt-3">name</label>
+              <input
+                class="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm"
+                value="${escapeHtml(g.name)}"
+                data-action="group-name"
+                data-index="${idx}"
+              />
+
+              <label class="block text-xs font-semibold text-neutral-700 mt-3">container class</label>
+              <input
+                class="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm font-mono"
+                value="${escapeHtml(g.containerClass)}"
+                data-action="group-class"
+                data-index="${idx}"
+              />
+              <p class="text-[11px] text-neutral-600 mt-2">
+                Typical: <span class="font-mono">flex w-full md:w-1/2 flex-wrap</span>
+              </p>
+            </div>
+          `;
+          })
+          .join("");
+
+        wireGroupEvents();
+      }
+
+      function wireGroupEvents() {
+        const root = document.getElementById("groupList");
+
+        // Inputs
+        root.querySelectorAll("input[data-action]").forEach((el) => {
+          el.addEventListener("input", (e) => {
+            const action = e.target.getAttribute("data-action");
+            const idx = Number(e.target.getAttribute("data-index"));
+            if (!Number.isFinite(idx) || !groups[idx]) return;
+
+            if (action === "group-name") groups[idx].name = e.target.value;
+            if (action === "group-class") {
+              groups[idx].containerClass = sanitizeClassString(e.target.value) || DEFAULT_GROUP_CONTAINER_CLASS;
+            }
+
+            saveGroups();
+            items = items.map(normalizeItem);
+            saveItems();
+            renderAll();
+          });
+        });
+
+        // Buttons
+        root.querySelectorAll("button[data-action]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const action = btn.getAttribute("data-action");
+            const idx = Number(btn.getAttribute("data-index"));
+            if (!Number.isFinite(idx) || !groups[idx]) return;
+
+            if (action === "group-up" && idx > 0) {
+              const tmp = groups[idx - 1];
+              groups[idx - 1] = groups[idx];
+              groups[idx] = tmp;
+            }
+
+            if (action === "group-down" && idx < groups.length - 1) {
+              const tmp = groups[idx + 1];
+              groups[idx + 1] = groups[idx];
+              groups[idx] = tmp;
+            }
+
+            if (action === "group-delete") {
+              if (groups.length <= 1) return;
+              const removed = groups[idx];
+              groups.splice(idx, 1);
+
+              const fallbackId = groups[0].id;
+              items = items.map((it) => (it.groupId === removed.id ? { ...it, groupId: fallbackId } : it));
+            }
+
+            saveGroups();
+            saveItems();
+            renderAll();
+          });
+        });
+
+        // Drop zones for moving image cards into group
+        root.querySelectorAll("[data-group-drop='true']").forEach((card) => {
+          card.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            card.classList.add("group-drop-target");
+            e.dataTransfer.dropEffect = "move";
+          });
+
+          card.addEventListener("dragleave", () => {
+            card.classList.remove("group-drop-target");
+          });
+
+          card.addEventListener("drop", (e) => {
+            e.preventDefault();
+            card.classList.remove("group-drop-target");
+
+            const gid = card.getAttribute("data-group-id");
+            if (!gid || !groups.some((g) => g.id === gid)) return;
+
+            const itemId = dragItemId || e.dataTransfer.getData("text/plain");
+            if (!itemId) return;
+
+            moveItemToEndOfGroup(itemId, gid);
+            saveItems();
+            renderAll();
+          });
+        });
+      }
+
+      function addGroup() {
+        const input = document.getElementById("newGroupName");
+        const name = (input.value || "").trim() || "New group";
+        input.value = "";
+
+        groups.push({
+          id: crypto.randomUUID(),
+          name,
+          containerClass: DEFAULT_GROUP_CONTAINER_CLASS,
+        });
+
+        saveGroups();
+        items = items.map(normalizeItem);
+        saveItems();
+        renderAll();
+      }
+
+      // -------- Editor
+      function renderEditor() {
+        const editor = document.getElementById("editorList");
+        const count = document.getElementById("countLabel");
+        count.textContent = String(items.length);
+
+        const groupOptions = (selectedId) =>
+          groups
+            .map((g) => {
+              const sel = g.id === selectedId ? "selected" : "";
+              return `<option value="${escapeHtml(g.id)}" ${sel}>${escapeHtml(g.name)}</option>`;
+            })
+            .join("");
+
+        editor.innerHTML = items
+          .map((it, idx) => {
+            const title = escapeHtml(basename(it.src));
+            return `
+              <div
+                class="rounded-xl border border-neutral-200 p-3 flex gap-3 items-start bg-white"
+                draggable="true"
+                data-index="${idx}"
+                data-item-id="${escapeHtml(it.id)}"
+              >
+                <div class="w-24 h-24 flex-none overflow-hidden rounded-lg border border-neutral-200 bg-neutral-50">
+                  <img src="${escapeHtml(it.src)}" alt="" class="w-full h-full object-cover" />
+                </div>
+
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                      <p class="text-sm font-semibold truncate">${title}</p>
+                      <p class="text-xs text-neutral-600 mt-1">Drag onto groups or reorder here</p>
+                    </div>
+
+                    <button
+                      class="text-xs font-semibold text-red-700 hover:underline"
+                      type="button"
+                      data-action="delete"
+                      data-index="${idx}"
+                    >
+                      Delete
+                    </button>
+                  </div>
+
+                  <div class="mt-3 grid grid-cols-1 gap-2">
+                    <label class="text-xs font-semibold text-neutral-700">group</label>
+                    <select
+                      class="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm"
+                      data-action="edit-group"
+                      data-index="${idx}"
+                    >
+                      ${groupOptions(it.groupId)}
+                    </select>
+
+                    <label class="text-xs font-semibold text-neutral-700 mt-2">src</label>
+                    <input
+                      class="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm"
+                      value="${escapeHtml(it.src)}"
+                      data-action="edit-src"
+                      data-index="${idx}"
+                    />
+
+                    <label class="text-xs font-semibold text-neutral-700 mt-2">alt</label>
+                    <input
+                      class="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm"
+                      value="${escapeHtml(it.alt || "")}"
+                      data-action="edit-alt"
+                      data-index="${idx}"
+                    />
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                      <div>
+                        <label class="text-xs font-semibold text-neutral-700">width class</label>
+                        <input
+                          class="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm font-mono"
+                          value="${escapeHtml(it.widthClass || DEFAULT_WIDTH)}"
+                          placeholder="${DEFAULT_WIDTH}"
+                          data-action="edit-width"
+                          data-index="${idx}"
+                        />
+                      </div>
+
+                      <div>
+                        <label class="text-xs font-semibold text-neutral-700">padding class</label>
+                        <input
+                          class="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm font-mono"
+                          value="${escapeHtml(it.paddingClass || DEFAULT_PADDING)}"
+                          placeholder="${DEFAULT_PADDING}"
+                          data-action="edit-padding"
+                          data-index="${idx}"
+                        />
+                      </div>
+                    </div>
+
+                    <div class="flex flex-wrap gap-2 mt-2">
+                      <button
+                        class="rounded-lg border border-neutral-300 px-3 py-1.5 text-xs font-semibold hover:bg-neutral-50"
+                        type="button"
+                        data-action="set-half"
+                        data-index="${idx}"
+                      >
+                        Quick half
+                      </button>
+                      <button
+                        class="rounded-lg border border-neutral-300 px-3 py-1.5 text-xs font-semibold hover:bg-neutral-50"
+                        type="button"
+                        data-action="set-full"
+                        data-index="${idx}"
+                      >
+                        Quick full
+                      </button>
+                      <button
+                        class="rounded-lg border border-neutral-300 px-3 py-1.5 text-xs font-semibold hover:bg-neutral-50"
+                        type="button"
+                        data-action="reset-sizing"
+                        data-index="${idx}"
+                      >
+                        Reset sizing
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `;
+          })
+          .join("");
+
+        wireEditorEvents();
+      }
+
+      function wireEditorEvents() {
+        const editor = document.getElementById("editorList");
+
+        // Inputs + selects
+        editor.querySelectorAll("input[data-action], select[data-action]").forEach((el) => {
+          el.addEventListener("input", (e) => {
+            const action = e.target.getAttribute("data-action");
+            const idx = Number(e.target.getAttribute("data-index"));
+            if (!Number.isFinite(idx) || !items[idx]) return;
+
+            if (action === "edit-src") items[idx].src = e.target.value.trim();
+            if (action === "edit-alt") items[idx].alt = e.target.value;
+
+            if (action === "edit-width") {
+              const v = sanitizeClassString(e.target.value);
+              items[idx].widthClass = v || DEFAULT_WIDTH;
+            }
+
+            if (action === "edit-padding") {
+              const v = sanitizeClassString(e.target.value);
+              items[idx].paddingClass = v || DEFAULT_PADDING;
+            }
+
+            if (action === "edit-group") {
+              const gid = e.target.value;
+              if (groups.some((g) => g.id === gid)) {
+                // move to end of that group for a predictable ordering
+                moveItemToEndOfGroup(items[idx].id, gid);
+              }
+            }
+
+            saveItems();
+            renderAll();
+          });
+        });
+
+        // Buttons
+        editor.querySelectorAll("button[data-action]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const action = btn.getAttribute("data-action");
+            const idx = Number(btn.getAttribute("data-index"));
+            if (!Number.isFinite(idx) || !items[idx]) return;
+
+            if (action === "delete") {
+              items.splice(idx, 1);
+              saveItems();
+              renderAll();
+              return;
+            }
+
+            if (action === "set-half") items[idx].widthClass = "w-full md:w-1/2";
+            if (action === "set-full") items[idx].widthClass = "w-full";
+
+            if (action === "reset-sizing") {
+              items[idx].widthClass = DEFAULT_WIDTH;
+              items[idx].paddingClass = DEFAULT_PADDING;
+            }
+
+            saveItems();
+            renderAll();
+          });
+        });
+
+        // Drag reorder within editor list (kept global ordering)
+        let dragFromIndex = null;
+
+        editor.querySelectorAll("[draggable='true']").forEach((card) => {
+          card.addEventListener("dragstart", (e) => {
+            const idx = Number(card.getAttribute("data-index"));
+            const id = card.getAttribute("data-item-id");
+
+            dragFromIndex = Number.isFinite(idx) ? idx : null;
+            dragFromEditorIndex = dragFromIndex;
+            dragItemId = id || null;
+
+            card.classList.add("dragging");
+            e.dataTransfer.effectAllowed = "move";
+
+            // Put item id into transfer so drop targets can read it
+            if (dragItemId) e.dataTransfer.setData("text/plain", dragItemId);
+          });
+
+          card.addEventListener("dragend", () => {
+            card.classList.remove("dragging");
+            editor.querySelectorAll(".drop-target").forEach((x) => x.classList.remove("drop-target"));
+            document.querySelectorAll(".group-drop-target").forEach((x) => x.classList.remove("group-drop-target"));
+            document.querySelectorAll(".tile-drop-target").forEach((x) => x.classList.remove("tile-drop-target"));
+
+            dragFromIndex = null;
+            dragFromEditorIndex = null;
+            dragItemId = null;
+          });
+
+          card.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            card.classList.add("drop-target");
+            e.dataTransfer.dropEffect = "move";
+          });
+
+          card.addEventListener("dragleave", () => {
+            card.classList.remove("drop-target");
+          });
+
+          card.addEventListener("drop", (e) => {
+            e.preventDefault();
+            card.classList.remove("drop-target");
+
+            const targetIndex = Number(card.getAttribute("data-index"));
+            if (!Number.isFinite(targetIndex)) return;
+
+            const id = dragItemId || e.dataTransfer.getData("text/plain");
+            if (!id) return;
+
+            // Reorder globally in editor list
+            moveItemToIndex(id, targetIndex);
+
+            saveItems();
+            renderAll();
+          });
+        });
+      }
+
+      // -------- Live preview rendering + drag and drop
+      function renderGallery() {
+        const root = document.getElementById("galleryRoot");
+
+        const groupHtml = groups
+          .map((g) => {
+            const containerClass = escapeHtml(g.containerClass || DEFAULT_GROUP_CONTAINER_CLASS);
+
+            const children = items
+              .filter((it) => it.groupId === g.id)
+              .map((it) => {
+                const src = escapeHtml(it.src);
+                const alt = escapeHtml(it.alt || "");
+                const widthClass = escapeHtml(it.widthClass || DEFAULT_WIDTH);
+                const paddingClass = escapeHtml(it.paddingClass || DEFAULT_PADDING);
+
+                return `
+                  <div
+                    class="${widthClass} ${paddingClass}"
+                    data-preview-tile="true"
+                    draggable="true"
+                    data-item-id="${escapeHtml(it.id)}"
+                  >
+                    <div class="overflow-hidden h-full w-full">
+                      <a href="${src}" data-fancybox="gallery">
+                        <img
+                          alt="${alt}"
+                          class="block h-full w-full object-cover object-center opacity-0 animate-fade-in transition duration-500 transform scale-100 hover:scale-110"
+                          src="${src}"
+                          loading="lazy"
+                        />
+                      </a>
+                    </div>
+                  </div>
+                `;
+              })
+              .join("");
+
+            // IMPORTANT: mark group container as a drop zone
+            return `
+              <div
+                class="${containerClass}"
+                data-preview-group="true"
+                data-group-id="${escapeHtml(g.id)}"
+              >
+                ${children}
+              </div>
+            `;
+          })
+          .join("");
+
+        root.innerHTML = groupHtml;
+
+        // Rebind Fancybox
+        try {
+          if (window.Fancybox) {
+            Fancybox.unbind('[data-fancybox="gallery"]');
+            initFancybox();
+          }
+        } catch (e) {
+          console.warn("Fancybox bind failed:", e);
+        }
+
+        // Wire preview drag and drop after DOM exists
+        wirePreviewDnD();
+      }
+
+      function clearPreviewHighlights() {
+        document.querySelectorAll(".group-drop-target").forEach((x) => x.classList.remove("group-drop-target"));
+        document.querySelectorAll(".tile-drop-target").forEach((x) => x.classList.remove("tile-drop-target"));
+      }
+
+      function wirePreviewDnD() {
+        // Tiles draggable
+        document.querySelectorAll("[data-preview-tile='true']").forEach((tile) => {
+          tile.addEventListener("dragstart", (e) => {
+            const id = tile.getAttribute("data-item-id");
+            dragItemId = id || null;
+            tile.classList.add("dragging");
+            e.dataTransfer.effectAllowed = "move";
+            if (dragItemId) e.dataTransfer.setData("text/plain", dragItemId);
+          });
+
+          tile.addEventListener("dragend", () => {
+            tile.classList.remove("dragging");
+            clearPreviewHighlights();
+            dragItemId = null;
+          });
+
+          // Drop onto a tile means "insert before this tile"
+          tile.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            tile.classList.add("tile-drop-target");
+            e.dataTransfer.dropEffect = "move";
+          });
+
+          tile.addEventListener("dragleave", () => {
+            tile.classList.remove("tile-drop-target");
+          });
+
+          tile.addEventListener("drop", (e) => {
+            e.preventDefault();
+            tile.classList.remove("tile-drop-target");
+
+            const targetId = tile.getAttribute("data-item-id");
+            const movingId = dragItemId || e.dataTransfer.getData("text/plain");
+            if (!movingId || !targetId) return;
+
+            moveItemBeforeTarget(movingId, targetId);
+
+            saveItems();
+            renderAll();
+          });
+        });
+
+        // Drop onto a group container means "move into group and append to end"
+        document.querySelectorAll("[data-preview-group='true']").forEach((gbox) => {
+          gbox.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            gbox.classList.add("group-drop-target");
+            e.dataTransfer.dropEffect = "move";
+          });
+
+          gbox.addEventListener("dragleave", () => {
+            gbox.classList.remove("group-drop-target");
+          });
+
+          gbox.addEventListener("drop", (e) => {
+            // If the drop happened on a tile, that tile handler already ran.
+            // Here we handle drops on empty space inside the group container.
+            if (e.target && e.target.closest && e.target.closest("[data-preview-tile='true']")) return;
+
+            e.preventDefault();
+            gbox.classList.remove("group-drop-target");
+
+            const gid = gbox.getAttribute("data-group-id");
+            const movingId = dragItemId || e.dataTransfer.getData("text/plain");
+            if (!gid || !movingId) return;
+
+            moveItemToEndOfGroup(movingId, gid);
+
+            saveItems();
+            renderAll();
+          });
+        });
+      }
+
+      // -------- Add images
+      function addSelectedFiles() {
+        const fileInput = document.getElementById("fileInput");
+        const folderInput = document.getElementById("folderInput");
+
+        const files = [...Array.from(fileInput.files || []), ...Array.from(folderInput.files || [])];
+        if (!files.length) return;
+
+        for (const f of files) {
+          let rel = (f.webkitRelativePath || f.name).replaceAll("\\", "/");
+          if (!rel.startsWith("assets/")) rel = `assets/${rel}`;
+
+          const suggestedAlt = stripExt(f.name).replaceAll("_", " ").replaceAll("-", " ");
+
+          items.push(
+            normalizeItem({
+              id: crypto.randomUUID(),
+              src: rel,
+              alt: suggestedAlt,
+              groupId: groups[0]?.id || "",
+              widthClass: DEFAULT_WIDTH,
+              paddingClass: DEFAULT_PADDING,
+            })
+          );
+        }
+
+        fileInput.value = "";
+        folderInput.value = "";
+        saveItems();
+        renderAll();
+      }
+
+      // -------- Export/import
+      function exportJson() {
+        const payload = { groups, items };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "gallery.json";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        URL.revokeObjectURL(url);
+      }
+
+      function importJson(file) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const parsed = JSON.parse(String(reader.result || ""));
+
+            if (Array.isArray(parsed)) {
+              groups = DEFAULT_GROUPS.map(normalizeGroup);
+              items = parsed
+                .filter((x) => x && typeof x.src === "string")
+                .map((x) => normalizeItem({ ...x, groupId: groups[0].id }));
+              saveGroups();
+              saveItems();
+              renderAll();
+              return;
+            }
+
+            if (parsed && Array.isArray(parsed.groups) && Array.isArray(parsed.items)) {
+              groups = parsed.groups.map(normalizeGroup);
+              items = parsed.items.filter((x) => x && typeof x.src === "string").map(normalizeItem);
+              saveGroups();
+              saveItems();
+              renderAll();
+              return;
+            }
+
+            alert("Import failed. Expected either an array of items, or an object with groups and items.");
+          } catch {
+            alert("Import failed. Invalid JSON.");
+          }
+        };
+        reader.readAsText(file);
+      }
+
+      function resetAll() {
+        groups = DEFAULT_GROUPS.map(normalizeGroup);
+        items = DEFAULT_ITEMS.map(normalizeItem);
+        saveGroups();
+        saveItems();
+        renderAll();
+      }
+
+      function renderAll() {
+        renderGroups();
+        renderEditor();
+        renderGallery();
+      }
+
+      // Wire controls
+      document.getElementById("addSelectedBtn").addEventListener("click", addSelectedFiles);
+      document.getElementById("exportBtn").addEventListener("click", exportJson);
+      document.getElementById("importInput").addEventListener("change", (e) => {
+        const f = e.target.files && e.target.files[0];
+        if (f) importJson(f);
+        e.target.value = "";
+      });
+      document.getElementById("resetBtn").addEventListener("click", resetAll);
+      document.getElementById("addGroupBtn").addEventListener("click", addGroup);
+
+      // Init
+      initFancybox();
+      renderAll();
+    </script>
+  </body>
+</html>
