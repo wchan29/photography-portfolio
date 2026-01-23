@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Anson Chan - Portfolio</title>
+  <title>Portfolio - Anson Chan</title>
   <meta name="description"
     content="Hello there, I'm Sophia Williams – an intrepid explorer through the lens, on a relentless quest to capture the world's boundless wonders. Join me in unraveling the extraordinary through my lens as I embark on a visual journey like no other.">
 
@@ -55,6 +55,47 @@
     .animate-fade-in {
       animation: fadeIn 0.6s ease forwards;
     }
+
+    /* Gallery section collapse styles */
+    .gallery-section-header {
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.2s ease;
+      border-radius: 0.5rem;
+      padding: 0.5rem;
+      margin: -0.5rem;
+    }
+
+    .gallery-section-header:hover {
+      background-color: rgba(0, 0, 0, 0.03);
+    }
+
+    .dark .gallery-section-header:hover {
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+
+    .gallery-section-content {
+      max-height: 50000px;
+      overflow: hidden;
+      transition: max-height 0.4s ease, opacity 0.4s ease, margin-top 0.4s ease;
+      opacity: 1;
+      margin-top: 1.5rem;
+    }
+
+    .gallery-section-content.collapsed {
+      max-height: 0;
+      opacity: 0;
+      margin-top: 0;
+    }
+
+    .gallery-chevron {
+      transition: transform 0.3s ease;
+      display: inline-block;
+    }
+
+    .gallery-chevron.collapsed {
+      transform: rotate(-90deg);
+    }
   </style>
 </head>
 
@@ -75,15 +116,12 @@
 
   <!-- Content -->
   <div class="container mx-auto">
-    <h1 class="text-4xl pt-10 pb-8 font-bold">PORTFOLIO</h1>
-
-    <section class="text-neutral-700">
-      <div class="container w-full">
-        <div class="flex flex-wrap w-full" id="galleryRoot"></div>
-      </div>
-    </section>
+    <h1 class="text-2xl pt-10 pb-1 font-bold"> </h1>
 
     <p id="galleryStatus" class="mt-3 text-sm text-neutral-500"></p>
+
+    <!-- Gallery sections will be inserted here -->
+    <div id="galleryRoot"></div>
   </div>
 
   <!-- Footer -->
@@ -113,106 +151,187 @@
         .replaceAll("'", "&#039;");
     }
 
+    // Get thumbnail version of image (converts photo.jpg -> photo.min.jpg)
+    function getThumbnailSrc(src) {
+      const ext = src.lastIndexOf('.');
+      if (ext === -1) return src;
+      return src.substring(0, ext) + '.min' + src.substring(ext);
+    }
+
     async function loadGalleryFromJson() {
       const root = document.getElementById("galleryRoot");
       const status = document.getElementById("galleryStatus");
 
-      // ✅ CHANGE THIS if your JSON is not next to index.html
-      // Examples:
-      //   "gallery.json"
-      //   "assets/gallery.json"
-      //   "dist/gallery.json"
-      const GALLERY_JSON_PATH = "gallery.json";
+      // Load gallery configuration (lists which JSON files to load)
+      const GALLERY_CONFIG_PATH = "gallery-config.json";
 
       try {
-        status.textContent = "Loading gallery…";
+        status.textContent = "Loading galleries…";
 
-        const res = await fetch(GALLERY_JSON_PATH, { cache: "no-store" });
-        if (!res.ok) {
-          throw new Error(`Could not fetch ${GALLERY_JSON_PATH} (HTTP ${res.status})`);
+        // Fetch gallery configuration
+        const configRes = await fetch(GALLERY_CONFIG_PATH, { cache: "no-store" });
+        if (!configRes.ok) {
+          throw new Error(`Could not fetch ${GALLERY_CONFIG_PATH} (HTTP ${configRes.status})`);
         }
 
-        const payload = await res.json();
+        const config = await configRes.json();
+        const enabledGalleries = config.galleries.filter(g => g.enabled !== false);
 
-        // Support either:
-        //  1) { groups: [...], items: [...] }  (recommended)
-        //  2) [ {src, alt, ...}, ... ]         (legacy list: no groups)
-        let groups = [];
-        let items = [];
-
-        if (Array.isArray(payload)) {
-          // Legacy fallback: one group containing all items
-          groups = [{
-            id: "default",
-            name: "Gallery",
-            containerClass: "flex w-full flex-wrap"
-          }];
-          items = payload.map((x) => ({
-            src: x.src,
-            alt: x.alt || "",
-            groupId: "default",
-            widthClass: x.widthClass || "w-full",
-            paddingClass: x.paddingClass || "p-1",
-          }));
-        } else {
-          groups = Array.isArray(payload.groups) ? payload.groups : [];
-          items = Array.isArray(payload.items) ? payload.items : [];
+        if (!enabledGalleries.length) {
+          throw new Error("No enabled galleries found in gallery-config.json");
         }
 
-        if (!groups.length) {
-          // If groups are missing, still render everything as one group
-          groups = [{
-            id: "default",
-            name: "Gallery",
-            containerClass: "flex w-full flex-wrap"
-          }];
-          items = items.map((it) => ({ ...it, groupId: "default" }));
+        // Load all gallery JSON files in order
+        const galleryPromises = enabledGalleries.map(async (gallery) => {
+          const res = await fetch(gallery.path, { cache: "no-store" });
+          if (!res.ok) {
+            console.warn(`Could not fetch ${gallery.path}, skipping...`);
+            return null;
+          }
+          const data = await res.json();
+          return { name: gallery.name, data };
+        });
+
+        const loadedGalleries = (await Promise.all(galleryPromises)).filter(g => g !== null);
+
+        if (!loadedGalleries.length) {
+          throw new Error("No galleries could be loaded");
         }
 
-        // Build grouped layout (your "half width container" pattern)
-        const html = groups.map((g) => {
-          const containerClass = escapeHtml(
-            g.containerClass || "flex w-full md:w-1/2 flex-wrap"
-          );
+        // Build separate sections for each gallery
+        const sectionsHtml = loadedGalleries.map((gallery, galleryIndex) => {
+          const payload = gallery.data;
 
-          const children = items
-            .filter((it) => it.groupId === g.id)
-            .map((it) => {
-              const src = escapeHtml(it.src || "");
-              const alt = escapeHtml(it.alt || "");
-              const widthClass = escapeHtml(it.widthClass || "w-full");
-              const paddingClass = escapeHtml(it.paddingClass || "p-1");
+          // Support either:
+          //  1) { groups: [...], items: [...] }  (recommended)
+          //  2) [ {src, alt, ...}, ... ]         (legacy list: no groups)
+          let groups = [];
+          let items = [];
 
-              // If a bad path slips in, avoid rendering broken empty anchors
-              if (!src) return "";
+          if (Array.isArray(payload)) {
+            // Legacy fallback: one group containing all items
+            groups = [{
+              id: `gallery${galleryIndex}_default`,
+              name: gallery.name,
+              containerClass: "flex w-full flex-wrap"
+            }];
+            items = payload.map((x) => ({
+              src: x.src,
+              alt: x.alt || "",
+              groupId: `gallery${galleryIndex}_default`,
+              widthClass: x.widthClass || "w-full",
+              paddingClass: x.paddingClass || "p-1",
+            }));
+          } else {
+            groups = Array.isArray(payload.groups) ? payload.groups : [];
+            items = Array.isArray(payload.items) ? payload.items : [];
 
-              return `
-                <div class="${widthClass} ${paddingClass}">
-                  <div class="overflow-hidden h-full w-full">
-                    <a href="${src}" data-fancybox="gallery">
-                      <img
-                        src="${src}"
-                        alt="${alt}"
-                        loading="lazy"
-                        class="block h-full w-full object-cover object-center opacity-0 animate-fade-in transition duration-500 transform scale-100 hover:scale-110"
-                      />
-                    </a>
+            // Prefix group IDs to avoid conflicts between galleries
+            groups = groups.map(g => ({
+              ...g,
+              id: `gallery${galleryIndex}_${g.id}`
+            }));
+            items = items.map(it => ({
+              ...it,
+              groupId: `gallery${galleryIndex}_${it.groupId}`
+            }));
+          }
+
+          if (!groups.length && items.length) {
+            // If groups are missing, create a default group
+            groups = [{
+              id: `gallery${galleryIndex}_default`,
+              name: gallery.name,
+              containerClass: "flex w-full flex-wrap"
+            }];
+            items = items.map((it) => ({
+              ...it,
+              groupId: `gallery${galleryIndex}_default`
+            }));
+          }
+
+          // Build grouped layout for this gallery
+          const galleryHtml = groups.map((g) => {
+            const containerClass = escapeHtml(
+              g.containerClass || "flex w-full md:w-1/2 flex-wrap"
+            );
+
+            const children = items
+              .filter((it) => it.groupId === g.id)
+              .map((it) => {
+                const src = escapeHtml(it.src || "");
+                const thumbnailSrc = escapeHtml(getThumbnailSrc(it.src || ""));
+                const alt = escapeHtml(it.alt || "");
+                const widthClass = escapeHtml(it.widthClass || "w-full");
+                const paddingClass = escapeHtml(it.paddingClass || "p-1");
+
+                // If a bad path slips in, avoid rendering broken empty anchors
+                if (!src) return "";
+
+                return `
+                  <div class="${widthClass} ${paddingClass}">
+                    <div class="overflow-hidden h-full w-full">
+                      <a href="${src}" data-fancybox="gallery-${galleryIndex}">
+                        <img
+                          src="${thumbnailSrc}"
+                          alt="${alt}"
+                          loading="lazy"
+                          onerror="this.src='${src}'"
+                          class="block h-full w-full object-cover object-center opacity-0 animate-fade-in transition duration-500 transform scale-100 hover:scale-110"
+                        />
+                      </a>
+                    </div>
+                  </div>
+                `;
+              })
+              .join("");
+
+            return `<div class="${containerClass}">${children}</div>`;
+          }).join("");
+
+          // Return a section with title and gallery
+          return `
+            <section class="mb-16" data-gallery-section="${galleryIndex}">
+              <div class="gallery-section-header flex items-center gap-3" data-gallery-toggle="${galleryIndex}">
+                <svg class="gallery-chevron w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+                <h2 class="text-3xl font-bold text-black dark:text-white">${escapeHtml(gallery.name)}</h2>
+              </div>
+              <div class="gallery-section-content" data-gallery-content="${galleryIndex}">
+                <div class="text-neutral-700">
+                  <div class="container w-full">
+                    <div class="flex flex-wrap w-full">${galleryHtml}</div>
                   </div>
                 </div>
-              `;
-            })
-            .join("");
-
-          return `<div class="${containerClass}">${children}</div>`;
+              </div>
+            </section>
+          `;
         }).join("");
 
-        root.innerHTML = html;
+        root.innerHTML = sectionsHtml;
 
-        // Rebind Fancybox AFTER inserting new DOM
+        // Rebind Fancybox AFTER inserting new DOM for each gallery
         if (window.Fancybox) {
-          try { Fancybox.unbind('[data-fancybox="gallery"]'); } catch (e) {}
-          Fancybox.bind('[data-fancybox="gallery"]', {});
+          loadedGalleries.forEach((gallery, galleryIndex) => {
+            try { Fancybox.unbind(`[data-fancybox="gallery-${galleryIndex}"]`); } catch (e) {}
+            Fancybox.bind(`[data-fancybox="gallery-${galleryIndex}"]`, {});
+          });
         }
+
+        // Add collapse/expand functionality to gallery sections
+        document.querySelectorAll('[data-gallery-toggle]').forEach((toggle) => {
+          toggle.addEventListener('click', (e) => {
+            const galleryIndex = toggle.getAttribute('data-gallery-toggle');
+            const content = document.querySelector(`[data-gallery-content="${galleryIndex}"]`);
+            const chevron = toggle.querySelector('.gallery-chevron');
+
+            if (content && chevron) {
+              content.classList.toggle('collapsed');
+              chevron.classList.toggle('collapsed');
+            }
+          });
+        });
 
         status.textContent = "";
       } catch (err) {

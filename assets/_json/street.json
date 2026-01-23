@@ -1,0 +1,72 @@
+{
+  "groups": [
+    {
+      "id": "ce622add-93c9-44cd-b0d6-54070f3c79ec",
+      "name": "Left block",
+      "containerClass": "flex w-full md:w-1/2 flex-wrap"
+    },
+    {
+      "id": "f80fdbfe-df49-40da-8ab3-c95409cd2b80",
+      "name": "Right block",
+      "containerClass": "flex w-full md:w-1/2 flex-wrap"
+    }
+  ],
+  "items": [
+    {
+      "id": "4ee3790c-3cf1-4ecd-b3d5-173745bf3d57",
+      "src": "assets/Street/DSC01774-Edit-2.jpg",
+      "alt": "DSC01774 Edit 2",
+      "groupId": "ce622add-93c9-44cd-b0d6-54070f3c79ec",
+      "widthClass": "w-full",
+      "paddingClass": "p-1"
+    },
+    {
+      "id": "5a79eec1-6238-4359-9337-504678fe5d5b",
+      "src": "assets/Street/P5190230.jpg",
+      "alt": "P5190230",
+      "groupId": "ce622add-93c9-44cd-b0d6-54070f3c79ec",
+      "widthClass": "w-full md:w-1/2",
+      "paddingClass": "p-1"
+    },
+    {
+      "id": "6323cca2-4694-4171-bd2e-199797b3a06e",
+      "src": "assets/Street/PC260243.jpg",
+      "alt": "PC260243",
+      "groupId": "ce622add-93c9-44cd-b0d6-54070f3c79ec",
+      "widthClass": "w-full md:w-1/2",
+      "paddingClass": "p-1"
+    },
+    {
+      "id": "1f77d40e-e1f8-42bc-98d3-86af390fc5ea",
+      "src": "assets/Street/PC260219.jpg",
+      "alt": "PC260219",
+      "groupId": "f80fdbfe-df49-40da-8ab3-c95409cd2b80",
+      "widthClass": "w-full",
+      "paddingClass": "p-1"
+    },
+    {
+      "id": "43ee42b0-c236-42ef-9408-7dbdce98dc1d",
+      "src": "assets/Street/P1190470.jpg",
+      "alt": "P1190470",
+      "groupId": "f80fdbfe-df49-40da-8ab3-c95409cd2b80",
+      "widthClass": "w-full md:w-1/2",
+      "paddingClass": "p-1"
+    },
+    {
+      "id": "5e339387-49fa-4f9b-86c5-0d6ebc96c2fc",
+      "src": "assets/Street/P5170161-2.jpg",
+      "alt": "P5170161 2",
+      "groupId": "f80fdbfe-df49-40da-8ab3-c95409cd2b80",
+      "widthClass": "w-full md:w-1/2",
+      "paddingClass": "p-1"
+    },
+    {
+      "id": "6d2db9e4-254e-4b51-95bb-a2081cd79040",
+      "src": "assets/Street/P8030516.jpg",
+      "alt": "P8030516",
+      "groupId": "f80fdbfe-df49-40da-8ab3-c95409cd2b80",
+      "widthClass": "w-full",
+      "paddingClass": "p-1"
+    }
+  ]
+}

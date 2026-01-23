@@ -1,0 +1,14 @@
+{
+  "galleries": [
+    {
+      "name": "Street Photography",
+      "path": "assets/_json/street.json",
+      "enabled": true
+    },
+    {
+      "name": "Arizona, USA 2024",
+      "path": "assets/_json/arizona2024.json",
+      "enabled": true
+    }
+  ]
+}

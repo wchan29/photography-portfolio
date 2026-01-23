@@ -1,0 +1,200 @@
+{
+  "groups": [
+    {
+      "id": "68dae15e-85f3-47e2-a2ad-ae586aab76fd",
+      "name": "Left block",
+      "containerClass": "flex w-full md:w-1/2 flex-wrap"
+    },
+    {
+      "id": "5d132bdf-2aa5-42e2-8a92-ac4e4edabe28",
+      "name": "Right block",
+      "containerClass": "flex w-full md:w-1/2 flex-wrap"
+    }
+  ],
+  "items": [
+    {
+      "id": "9103fd5b-5f0e-4a39-99d2-559a58b27550",
+      "src": "assets/2024/Arizona_USA/DSC01366.jpg",
+      "alt": "DSC01366",
+      "groupId": "68dae15e-85f3-47e2-a2ad-ae586aab76fd",
+      "widthClass": "w-full",
+      "paddingClass": "p-1"
+    },
+    {
+      "id": "62e1e5b2-2a85-4a22-a3e6-791fc98da503",
+      "src": "assets/2024/Arizona_USA/DSC01163.jpg",
+      "alt": "DSC01163",
+      "groupId": "68dae15e-85f3-47e2-a2ad-ae586aab76fd",
+      "widthClass": "w-full md:w-1/2",
+      "paddingClass": "p-1"
+    },
+    {
+      "id": "3ae047dc-abd4-44d2-816e-14b0fd0d9eb8",
+      "src": "assets/2024/Arizona_USA/DSC01127.jpg",
+      "alt": "DSC01127",
+      "groupId": "68dae15e-85f3-47e2-a2ad-ae586aab76fd",
+      "widthClass": "w-full md:w-1/2",
+      "paddingClass": "p-1"
+    },
+    {
+      "id": "8dfa2fc7-85e9-40fe-8b15-4ae1392b5b05",
+      "src": "assets/2024/Arizona_USA/DSC01131.jpg",
+      "alt": "DSC01131",
+      "groupId": "68dae15e-85f3-47e2-a2ad-ae586aab76fd",
+      "widthClass": "w-full",
+      "paddingClass": "p-1"
+    },
+    {
+      "id": "76168715-d03d-46a5-ac33-670465f5c1c5",
+      "src": "assets/2024/Arizona_USA/DSC01277.jpg",
+      "alt": "DSC01277",
+      "groupId": "68dae15e-85f3-47e2-a2ad-ae586aab76fd",
+      "widthClass": "w-full",
+      "paddingClass": "p-1"
+    },
+    {
+      "id": "007abde8-57ef-4598-b7c2-ac578ffa3c40",
+      "src": "assets/2024/Arizona_USA/DSC01220.jpg",
+      "alt": "DSC01220",
+      "groupId": "68dae15e-85f3-47e2-a2ad-ae586aab76fd",
+      "widthClass": "w-full md:w-1/2",
+      "paddingClass": "p-1"
+    },
+    {
+      "id": "2a81667f-093f-46a4-b190-69a055ee90d4",
+      "src": "assets/2024/Arizona_USA/DSC01302.jpg",
+      "alt": "DSC01302",
+      "groupId": "68dae15e-85f3-47e2-a2ad-ae586aab76fd",
+      "widthClass": "w-full md:w-1/2",
+      "paddingClass": "p-1"
+    },
+    {
+      "id": "ee4896d7-c203-4fb3-ba3b-8b689e5b4345",
+      "src": "assets/2024/Arizona_USA/DSC01350.jpg",
+      "alt": "DSC01350",
+      "groupId": "68dae15e-85f3-47e2-a2ad-ae586aab76fd",
+      "widthClass": "w-full",
+      "paddingClass": "p-1"
+    },
+    {
+      "id": "dbdef199-3942-4a81-aaaa-7771bdbb2426",
+      "src": "assets/2024/Arizona_USA/DSC01378.jpg",
+      "alt": "DSC01378",
+      "groupId": "68dae15e-85f3-47e2-a2ad-ae586aab76fd",
+      "widthClass": "w-full md:w-1/2",
+      "paddingClass": "p-1"
+    },
+    {
+      "id": "dc25caa3-038c-4075-a56e-f70fd48d4f05",
+      "src": "assets/2024/Arizona_USA/DSC01477.jpg",
+      "alt": "DSC01477",
+      "groupId": "68dae15e-85f3-47e2-a2ad-ae586aab76fd",
+      "widthClass": "w-full md:w-1/2",
+      "paddingClass": "p-1"
+    },
+    {
+      "id": "f4cf8d82-8346-4b34-b57f-7f77d7ae8e02",
+      "src": "assets/2024/Arizona_USA/DSC01476.jpg",
+      "alt": "DSC01476",
+      "groupId": "68dae15e-85f3-47e2-a2ad-ae586aab76fd",
+      "widthClass": "w-full md:w-1/2",
+      "paddingClass": "p-1"
+    },
+    {
+      "id": "78ede974-ed5a-4edc-b0b9-0fbc34ea1b35",
+      "src": "assets/2024/Arizona_USA/DSC01406.jpg",
+      "alt": "DSC01406",
+      "groupId": "68dae15e-85f3-47e2-a2ad-ae586aab76fd",
+      "widthClass": "w-full md:w-1/2",
+      "paddingClass": "p-1"
+    },
+    {
+      "id": "8899b0eb-f590-413b-b308-950ffce04ce5",
+      "src": "assets/2024/Arizona_USA/DSC01534.jpg",
+      "alt": "DSC01534",
+      "groupId": "68dae15e-85f3-47e2-a2ad-ae586aab76fd",
+      "widthClass": "w-full",
+      "paddingClass": "p-1"
+    },
+    {
+      "id": "5ec39df1-9f63-4a44-96fd-324901c8afdf",
+      "src": "assets/2024/Arizona_USA/DSC00978.jpg",
+      "alt": "DSC00978",
+      "groupId": "5d132bdf-2aa5-42e2-8a92-ac4e4edabe28",
+      "widthClass": "w-full md:w-1/2",
+      "paddingClass": "p-1"
+    },
+    {
+      "id": "ddb28086-a91f-447e-bcae-bd1f43913b72",
+      "src": "assets/2024/Arizona_USA/DSC01018.jpg",
+      "alt": "DSC01018",
+      "groupId": "5d132bdf-2aa5-42e2-8a92-ac4e4edabe28",
+      "widthClass": "w-full md:w-1/2",
+      "paddingClass": "p-1"
+    },
+    {
+      "id": "236fc06c-3051-45b6-a47e-bdf0881dea9d",
+      "src": "assets/2024/Arizona_USA/DSC01382.jpg",
+      "alt": "DSC01382",
+      "groupId": "5d132bdf-2aa5-42e2-8a92-ac4e4edabe28",
+      "widthClass": "w-full",
+      "paddingClass": "p-1"
+    },
+    {
+      "id": "30099508-a419-4e33-bd2b-d7156a4fd13d",
+      "src": "assets/2024/Arizona_USA/DSC01206.jpg",
+      "alt": "DSC01206",
+      "groupId": "5d132bdf-2aa5-42e2-8a92-ac4e4edabe28",
+      "widthClass": "w-full",
+      "paddingClass": "p-1"
+    },
+    {
+      "id": "7904958f-5a11-4ddb-8aa1-49d0a5078058",
+      "src": "assets/2024/Arizona_USA/DSC01123.jpg",
+      "alt": "DSC01123",
+      "groupId": "5d132bdf-2aa5-42e2-8a92-ac4e4edabe28",
+      "widthClass": "w-full md:w-1/2",
+      "paddingClass": "p-1"
+    },
+    {
+      "id": "4d3dd314-6ed9-4ae8-9007-71c5ac62b67f",
+      "src": "assets/2024/Arizona_USA/DSC01178.jpg",
+      "alt": "DSC01178",
+      "groupId": "5d132bdf-2aa5-42e2-8a92-ac4e4edabe28",
+      "widthClass": "w-full md:w-1/2",
+      "paddingClass": "p-1"
+    },
+    {
+      "id": "c0c95651-4efb-4675-b3a3-926febca7efc",
+      "src": "assets/2024/Arizona_USA/DSC01555.jpg",
+      "alt": "DSC01555",
+      "groupId": "5d132bdf-2aa5-42e2-8a92-ac4e4edabe28",
+      "widthClass": "w-full",
+      "paddingClass": "p-1"
+    },
+    {
+      "id": "4fe51732-8538-4763-9d25-14093a75f118",
+      "src": "assets/2024/Arizona_USA/DSC01510.jpg",
+      "alt": "DSC01510",
+      "groupId": "5d132bdf-2aa5-42e2-8a92-ac4e4edabe28",
+      "widthClass": "w-full",
+      "paddingClass": "p-1"
+    },
+    {
+      "id": "7deca269-4921-47cf-92d3-a386fd1bcd33",
+      "src": "assets/2024/Arizona_USA/DSC01489.jpg",
+      "alt": "DSC01489",
+      "groupId": "5d132bdf-2aa5-42e2-8a92-ac4e4edabe28",
+      "widthClass": "w-full md:w-1/2",
+      "paddingClass": "p-1"
+    },
+    {
+      "id": "2ad21b0a-2dc9-41a8-9e6f-372aabebb97d",
+      "src": "assets/2024/Arizona_USA/DSC01459.jpg",
+      "alt": "DSC01459",
+      "groupId": "5d132bdf-2aa5-42e2-8a92-ac4e4edabe28",
+      "widthClass": "w-full md:w-1/2",
+      "paddingClass": "p-1"
+    }
+  ]
+}

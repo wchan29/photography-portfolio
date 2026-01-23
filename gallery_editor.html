@@ -1,4 +1,4 @@
-<!-- Generated using ChatGPT 5.2 -->
+<!-- Generated using ChatGPT 5.2 and Claude AI-->
 
 <!DOCTYPE html>
 <html lang="en" class="scroll-smooth">
@@ -17,24 +17,36 @@
 
     <style>
       .dragging {
-        opacity: 0.5;
+        opacity: 0.4;
+        transform: scale(0.95);
+        cursor: grabbing !important;
       }
+
       .drop-target {
-        outline: 2px dashed rgba(0, 0, 0, 0.25);
+        outline: 3px dashed rgba(59, 130, 246, 0.6);
         outline-offset: 4px;
+        background: rgba(59, 130, 246, 0.05);
+        transform: scale(1.02);
+        transition: all 0.2s ease;
       }
 
       /* Group drop highlight */
       .group-drop-target {
-        outline: 2px dashed rgba(0, 0, 0, 0.35);
+        outline: 3px dashed rgba(34, 197, 94, 0.7) !important;
         outline-offset: 6px;
-        background: rgba(0, 0, 0, 0.03);
+        background: rgba(34, 197, 94, 0.08) !important;
+        transform: scale(1.02);
+        box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2);
+        transition: all 0.2s ease;
       }
 
       /* Preview tile drop highlight */
       .tile-drop-target {
-        outline: 2px dashed rgba(0, 0, 0, 0.35);
+        outline: 3px dashed rgba(168, 85, 247, 0.6);
         outline-offset: 4px;
+        background: rgba(168, 85, 247, 0.05);
+        transform: scale(1.05);
+        transition: all 0.2s ease;
       }
 
       /* Fade in for images */
@@ -49,6 +61,40 @@
       .animate-fade-in {
         animation: fadeIn 0.6s ease forwards;
       }
+
+      /* Pulse animation for active drop zones */
+      @keyframes pulse-glow {
+        0%, 100% {
+          box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+        }
+        50% {
+          box-shadow: 0 0 0 8px rgba(34, 197, 94, 0);
+        }
+      }
+
+      .group-drop-target {
+        animation: pulse-glow 2s ease-in-out infinite;
+      }
+
+      /* Smooth expand/collapse animation */
+      [data-details-panel] {
+        transition: max-height 0.3s ease, opacity 0.3s ease, margin-top 0.3s ease;
+      }
+
+      /* Clickable card header hover effect */
+      [data-action="toggle-expand"]:hover {
+        background: rgba(0, 0, 0, 0.02);
+        border-radius: 0.5rem;
+      }
+
+      /* Drag handle cursor */
+      [data-drag-handle] {
+        cursor: grab;
+      }
+
+      [data-drag-handle]:active {
+        cursor: grabbing;
+      }
     </style>
   </head>
 
@@ -58,8 +104,7 @@
         <header class="flex flex-col gap-2">
           <h1 class="text-3xl font-bold">Interactive Gallery Editor</h1>
           <p class="text-sm text-neutral-600">
-            Drag image cards onto a Group card to move them. Also drag tiles inside the Live preview to move and reorder
-            inside groups.
+            Select your assets folder to import images. Drag image cards into groups, or drag tiles in the Live preview to organize your gallery.
           </p>
         </header>
 
@@ -67,20 +112,9 @@
         <section class="rounded-xl border border-neutral-200 p-4">
           <div class="flex flex-col lg:flex-row gap-4 lg:items-end">
             <div class="flex-1">
-              <label class="block text-sm font-semibold mb-2">Add images</label>
+              <label class="block text-sm font-semibold mb-2">Import from folder</label>
 
               <div class="flex flex-col gap-3">
-                <div class="flex flex-col sm:flex-row gap-3 sm:items-center">
-                  <input
-                    id="fileInput"
-                    class="block w-full text-sm text-neutral-700 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-neutral-900 file:text-white hover:file:opacity-90"
-                    type="file"
-                    accept="image/*"
-                    multiple
-                  />
-                  <span class="text-xs text-neutral-500 whitespace-nowrap">Pick files</span>
-                </div>
-
                 <div class="flex flex-col sm:flex-row gap-3 sm:items-center">
                   <input
                     id="folderInput"
@@ -90,7 +124,7 @@
                     multiple
                     webkitdirectory
                   />
-                  <span class="text-xs text-neutral-500 whitespace-nowrap">Pick folder</span>
+                  <span class="text-xs text-neutral-500 whitespace-nowrap">Select folder</span>
                 </div>
 
                 <div class="flex flex-col sm:flex-row gap-3 sm:items-center">
@@ -99,11 +133,19 @@
                     class="rounded-lg bg-neutral-900 text-white px-4 py-2 text-sm font-semibold hover:opacity-90"
                     type="button"
                   >
-                    Add selected
+                    Import images
+                  </button>
+
+                  <button
+                    id="reloadBtn"
+                    class="rounded-lg border border-neutral-300 px-4 py-2 text-sm font-semibold hover:bg-neutral-50"
+                    type="button"
+                  >
+                    Reload folder (add new)
                   </button>
 
                   <p class="text-xs text-neutral-600">
-                    Paths are normalized to begin with <span class="font-mono">assets/</span>.
+                    Paths preserved from folder structure. Reload adds only new images.
                   </p>
                 </div>
               </div>
@@ -134,44 +176,62 @@
           </div>
         </section>
 
-        <!-- Group manager -->
-        <section class="rounded-xl border border-neutral-200 p-4">
-          <div class="flex items-center justify-between gap-3">
-            <h2 class="text-xl font-semibold">Groups</h2>
-            <div class="flex items-center gap-2">
+        <!-- Groups and Images side by side -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Group manager -->
+          <section class="rounded-xl border border-neutral-200 p-4">
+            <div class="flex items-center justify-between gap-3">
+              <h2 class="text-xl font-semibold">Groups</h2>
+            </div>
+
+            <p class="text-sm text-neutral-600 mt-2">
+              Drag image cards from the right and drop them here →
+            </p>
+
+            <div class="flex items-center gap-2 mt-3">
               <input
                 id="newGroupName"
-                class="w-56 rounded-lg border border-neutral-200 px-3 py-2 text-sm"
+                class="flex-1 rounded-lg border border-neutral-200 px-3 py-2 text-sm"
                 placeholder="New group name"
               />
               <button
                 id="addGroupBtn"
-                class="rounded-lg bg-neutral-900 text-white px-4 py-2 text-sm font-semibold hover:opacity-90"
+                class="rounded-lg bg-neutral-900 text-white px-4 py-2 text-sm font-semibold hover:opacity-90 whitespace-nowrap"
                 type="button"
               >
                 Add group
               </button>
             </div>
-          </div>
 
-          <p class="text-sm text-neutral-600 mt-2">
-            Drop an image card onto a group, or drop preview tiles into a group container in the Live preview.
-          </p>
+            <div id="groupList" class="mt-4 flex flex-col gap-3"></div>
+          </section>
 
-          <div id="groupList" class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-3"></div>
-        </section>
+          <!-- Editor list -->
+          <section class="rounded-xl border border-neutral-200 p-4">
+            <div class="flex items-center justify-between gap-3">
+              <h2 class="text-xl font-semibold">Images</h2>
+              <p class="text-sm text-neutral-600">
+                <span id="countLabel" class="font-semibold">0</span> items
+              </p>
+            </div>
 
-        <!-- Editor list -->
-        <section class="rounded-xl border border-neutral-200 p-4">
-          <div class="flex items-center justify-between gap-3">
-            <h2 class="text-xl font-semibold">Images</h2>
-            <p class="text-sm text-neutral-600">
-              Items: <span id="countLabel" class="font-semibold">0</span>
+            <div class="flex items-center gap-3 mt-3">
+              <label class="text-sm font-semibold text-neutral-700 whitespace-nowrap">Filter by group:</label>
+              <select
+                id="filterGroupSelect"
+                class="flex-1 rounded-lg border border-neutral-200 px-3 py-2 text-sm"
+              >
+                <option value="all">All groups</option>
+              </select>
+            </div>
+
+            <p class="text-sm text-neutral-600 mt-2">
+              ← Drag images to groups on the left
             </p>
-          </div>
 
-          <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3" id="editorList"></div>
-        </section>
+            <div class="mt-4 flex flex-col gap-3" id="editorList"></div>
+          </section>
+        </div>
 
         <!-- Live preview -->
         <section class="rounded-xl border border-neutral-200 p-4">
@@ -216,6 +276,12 @@
       let dragItemId = null;     // stable id for dragged item
       let dragFromEditorIndex = null; // used only for editor reorder fallback
 
+      // Expanded card state
+      let expandedCards = new Set(); // Set of item IDs that are expanded
+
+      // Filter state
+      let filterGroupId = "all"; // "all" or specific group ID
+
       function initFancybox() {
         if (window.Fancybox) {
           Fancybox.bind('[data-fancybox="gallery"]', {});
@@ -234,6 +300,22 @@
       function ensureId(x) {
         const v = typeof x.id === "string" ? x.id : "";
         return v ? v : crypto.randomUUID();
+      }
+
+      // Generate color for group based on index
+      function getGroupColor(groupId) {
+        const colors = [
+          { bg: "bg-blue-100", border: "border-blue-400", text: "text-blue-700" },
+          { bg: "bg-green-100", border: "border-green-400", text: "text-green-700" },
+          { bg: "bg-purple-100", border: "border-purple-400", text: "text-purple-700" },
+          { bg: "bg-orange-100", border: "border-orange-400", text: "text-orange-700" },
+          { bg: "bg-pink-100", border: "border-pink-400", text: "text-pink-700" },
+          { bg: "bg-cyan-100", border: "border-cyan-400", text: "text-cyan-700" },
+          { bg: "bg-yellow-100", border: "border-yellow-400", text: "text-yellow-700" },
+          { bg: "bg-red-100", border: "border-red-400", text: "text-red-700" },
+        ];
+        const idx = groups.findIndex((g) => g.id === groupId);
+        return colors[idx % colors.length] || colors[0];
       }
 
       function normalizeGroup(g) {
@@ -319,6 +401,13 @@
         return parts[parts.length - 1] || s;
       }
 
+      // Get thumbnail version of image (converts photo.jpg -> photo.min.jpg)
+      function getThumbnailSrc(src) {
+        const ext = src.lastIndexOf('.');
+        if (ext === -1) return src;
+        return src.substring(0, ext) + '.min' + src.substring(ext);
+      }
+
       function escapeHtml(s) {
         return String(s)
           .replaceAll("&", "&amp;")
@@ -393,18 +482,22 @@
         root.innerHTML = groups
           .map((g, idx) => {
             const itemCount = items.filter((it) => it.groupId === g.id).length;
+            const color = getGroupColor(g.id);
 
             return `
             <div
-              class="rounded-xl border border-neutral-200 p-3 bg-white"
+              class="rounded-xl border-2 ${color.border} p-3 bg-white transition-all duration-200 hover:shadow-md"
               data-group-drop="true"
               data-group-id="${escapeHtml(g.id)}"
             >
               <div class="flex items-start justify-between gap-3">
-                <div class="min-w-0">
-                  <p class="text-sm font-semibold">Group ${idx + 1}</p>
-                  <p class="text-xs text-neutral-600 mt-1">Drop image cards here</p>
-                  <p class="text-xs text-neutral-600 mt-1">Items: <span class="font-semibold">${itemCount}</span></p>
+                <div class="min-w-0 flex items-center gap-2">
+                  <div class="w-3 h-3 rounded-full ${color.bg} ${color.border} border-2 flex-shrink-0"></div>
+                  <div>
+                    <p class="text-sm font-semibold ${color.text}">Group ${idx + 1}</p>
+                    <p class="text-xs text-neutral-600 mt-1">Drop image cards here</p>
+                    <p class="text-xs text-neutral-600 mt-1">Items: <span class="font-semibold">${itemCount}</span></p>
+                  </div>
                 </div>
                 <div class="flex gap-2">
                   <button class="text-xs font-semibold hover:underline" data-action="group-up" data-index="${idx}" type="button">Up</button>
@@ -545,7 +638,27 @@
       function renderEditor() {
         const editor = document.getElementById("editorList");
         const count = document.getElementById("countLabel");
-        count.textContent = String(items.length);
+        const filterSelect = document.getElementById("filterGroupSelect");
+
+        // Update filter dropdown
+        filterSelect.innerHTML = `
+          <option value="all">All groups (${items.length})</option>
+          ${groups
+            .map((g) => {
+              const itemCount = items.filter((it) => it.groupId === g.id).length;
+              const color = getGroupColor(g.id);
+              const sel = g.id === filterGroupId ? "selected" : "";
+              return `<option value="${escapeHtml(g.id)}" ${sel}>${escapeHtml(g.name)} (${itemCount})</option>`;
+            })
+            .join("")}
+        `;
+
+        // Filter items based on selected group
+        const filteredItems = filterGroupId === "all"
+          ? items
+          : items.filter((it) => it.groupId === filterGroupId);
+
+        count.textContent = String(filteredItems.length);
 
         const groupOptions = (selectedId) =>
           groups
@@ -555,27 +668,66 @@
             })
             .join("");
 
-        editor.innerHTML = items
-          .map((it, idx) => {
+        editor.innerHTML = filteredItems
+          .map((it) => {
+            const idx = items.findIndex((item) => item.id === it.id); // Use original array index
             const title = escapeHtml(basename(it.src));
+            const color = getGroupColor(it.groupId);
+            const group = groups.find((g) => g.id === it.groupId);
+            const groupName = group ? escapeHtml(group.name) : "Unknown";
+            const isExpanded = expandedCards.has(it.id);
+
+            const thumbnailSrc = getThumbnailSrc(it.src);
+
             return `
               <div
-                class="rounded-xl border border-neutral-200 p-3 flex gap-3 items-start bg-white"
-                draggable="true"
+                class="rounded-xl border-l-4 ${color.border} border-y border-r border-neutral-200 p-3 bg-white hover:shadow-md transition-all duration-200"
                 data-index="${idx}"
                 data-item-id="${escapeHtml(it.id)}"
               >
-                <div class="w-24 h-24 flex-none overflow-hidden rounded-lg border border-neutral-200 bg-neutral-50">
-                  <img src="${escapeHtml(it.src)}" alt="" class="w-full h-full object-cover" />
-                </div>
+                <div class="flex gap-3 items-start">
+                  <div class="w-16 h-16 flex-none overflow-hidden rounded-lg border border-neutral-200 bg-neutral-50">
+                    <img src="${escapeHtml(thumbnailSrc)}" onerror="this.src='${escapeHtml(it.src)}'" alt="" class="w-full h-full object-cover" />
+                  </div>
 
-                <div class="flex-1 min-w-0">
-                  <div class="flex items-start justify-between gap-3">
-                    <div class="min-w-0">
-                      <p class="text-sm font-semibold truncate">${title}</p>
-                      <p class="text-xs text-neutral-600 mt-1">Drag onto groups or reorder here</p>
+                  <div class="flex-1 min-w-0">
+                    <div
+                      class="flex items-start justify-between gap-3 cursor-pointer"
+                      data-action="toggle-expand"
+                      data-item-id="${escapeHtml(it.id)}"
+                    >
+                      <div class="min-w-0">
+                        <div class="flex items-center gap-2 mb-1">
+                          <p class="text-sm font-semibold truncate">${title}</p>
+                          <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold ${color.bg} ${color.text} border ${color.border} whitespace-nowrap">${groupName}</span>
+                        </div>
+                        <p class="text-xs text-neutral-600">
+                          ${isExpanded ? "Click to collapse" : "Click to expand • Drag to groups"}
+                        </p>
+                      </div>
+
+                      <div class="flex items-center gap-2">
+                        <svg class="w-4 h-4 text-neutral-600 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                      </div>
                     </div>
+                  </div>
 
+                  <div class="flex items-center gap-2">
+                    <button
+                      class="p-1.5 text-neutral-600 hover:text-neutral-900 transition-colors"
+                      type="button"
+                      title="Drag to reorder"
+                      draggable="true"
+                      data-drag-handle="true"
+                      data-index="${idx}"
+                      data-item-id="${escapeHtml(it.id)}"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path>
+                      </svg>
+                    </button>
                     <button
                       class="text-xs font-semibold text-red-700 hover:underline"
                       type="button"
@@ -585,8 +737,11 @@
                       Delete
                     </button>
                   </div>
+                </div>
 
-                  <div class="mt-3 grid grid-cols-1 gap-2">
+                <div class="mt-3 grid grid-cols-1 gap-2 overflow-hidden transition-all duration-300 ${isExpanded ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}"
+                  data-details-panel="true"
+                >
                     <label class="text-xs font-semibold text-neutral-700">group</label>
                     <select
                       class="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm"
@@ -675,6 +830,23 @@
       function wireEditorEvents() {
         const editor = document.getElementById("editorList");
 
+        // Toggle expand/collapse
+        editor.querySelectorAll("[data-action='toggle-expand']").forEach((el) => {
+          el.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const itemId = el.getAttribute("data-item-id");
+            if (!itemId) return;
+
+            if (expandedCards.has(itemId)) {
+              expandedCards.delete(itemId);
+            } else {
+              expandedCards.add(itemId);
+            }
+
+            renderAll();
+          });
+        });
+
         // Inputs + selects
         editor.querySelectorAll("input[data-action], select[data-action]").forEach((el) => {
           el.addEventListener("input", (e) => {
@@ -738,24 +910,31 @@
         // Drag reorder within editor list (kept global ordering)
         let dragFromIndex = null;
 
-        editor.querySelectorAll("[draggable='true']").forEach((card) => {
-          card.addEventListener("dragstart", (e) => {
-            const idx = Number(card.getAttribute("data-index"));
-            const id = card.getAttribute("data-item-id");
+        // Drag handles for reordering
+        editor.querySelectorAll("[data-drag-handle='true']").forEach((handle) => {
+          handle.addEventListener("dragstart", (e) => {
+            const idx = Number(handle.getAttribute("data-index"));
+            const id = handle.getAttribute("data-item-id");
 
             dragFromIndex = Number.isFinite(idx) ? idx : null;
             dragFromEditorIndex = dragFromIndex;
             dragItemId = id || null;
 
-            card.classList.add("dragging");
+            // Find the parent card
+            const card = handle.closest("[data-item-id]");
+            if (card) card.classList.add("dragging");
+
             e.dataTransfer.effectAllowed = "move";
 
             // Put item id into transfer so drop targets can read it
             if (dragItemId) e.dataTransfer.setData("text/plain", dragItemId);
           });
 
-          card.addEventListener("dragend", () => {
-            card.classList.remove("dragging");
+          handle.addEventListener("dragend", () => {
+            // Find the parent card
+            const card = handle.closest("[data-item-id]");
+            if (card) card.classList.remove("dragging");
+
             editor.querySelectorAll(".drop-target").forEach((x) => x.classList.remove("drop-target"));
             document.querySelectorAll(".group-drop-target").forEach((x) => x.classList.remove("group-drop-target"));
             document.querySelectorAll(".tile-drop-target").forEach((x) => x.classList.remove("tile-drop-target"));
@@ -764,8 +943,13 @@
             dragFromEditorIndex = null;
             dragItemId = null;
           });
+        });
 
+        // Drop zones on cards for reordering
+        editor.querySelectorAll("[data-item-id]").forEach((card) => {
           card.addEventListener("dragover", (e) => {
+            // Only handle if we're dragging from editor or preview
+            if (!dragItemId) return;
             e.preventDefault();
             card.classList.add("drop-target");
             e.dataTransfer.dropEffect = "move";
@@ -806,6 +990,7 @@
               .filter((it) => it.groupId === g.id)
               .map((it) => {
                 const src = escapeHtml(it.src);
+                const thumbnailSrc = escapeHtml(getThumbnailSrc(it.src));
                 const alt = escapeHtml(it.alt || "");
                 const widthClass = escapeHtml(it.widthClass || DEFAULT_WIDTH);
                 const paddingClass = escapeHtml(it.paddingClass || DEFAULT_PADDING);
@@ -822,7 +1007,8 @@
                         <img
                           alt="${alt}"
                           class="block h-full w-full object-cover object-center opacity-0 animate-fade-in transition duration-500 transform scale-100 hover:scale-110"
-                          src="${src}"
+                          src="${thumbnailSrc}"
+                          onerror="this.src='${src}'"
                           loading="lazy"
                         />
                       </a>
@@ -942,16 +1128,76 @@
       }
 
       // -------- Add images
-      function addSelectedFiles() {
-        const fileInput = document.getElementById("fileInput");
+      function addSelectedFiles(skipDuplicates = false) {
         const folderInput = document.getElementById("folderInput");
+        const folderList = Array.from(folderInput.files || []);
 
-        const files = [...Array.from(fileInput.files || []), ...Array.from(folderInput.files || [])];
-        if (!files.length) return;
+        if (!folderList.length) {
+          alert("Please select a folder first.");
+          return;
+        }
 
-        for (const f of files) {
+        // Get existing paths for duplicate checking
+        const existingPaths = new Set(items.map((it) => it.src));
+        let addedCount = 0;
+        let skippedCount = 0;
+
+        // Ask user for base path if it looks like a subfolder was selected
+        let basePath = "assets/";
+        if (folderList.length > 0) {
+          const firstPath = (folderList[0].webkitRelativePath || "").replaceAll("\\", "/");
+
+          // Check if path contains "assets/" anywhere
+          if (firstPath.indexOf("assets/") > 0) {
+            // Extract from assets/ onward
+            basePath = "";
+          } else if (!firstPath.startsWith("assets/")) {
+            // Looks like a subfolder was selected - ask user for the parent path
+            const firstFolder = firstPath.split("/")[0];
+            const userPath = prompt(
+              `You selected the folder "${firstFolder}".\n\n` +
+              `Please enter the full path from 'assets/' to this folder.\n` +
+              `For example, if the folder is at 'assets/2024/Arizona_USA',\n` +
+              `enter: 2024`,
+              ""
+            );
+
+            if (userPath && userPath.trim()) {
+              basePath = `assets/${userPath.trim()}/`;
+            }
+          }
+        }
+
+        // Process folder picker selections (preserves structure)
+        for (const f of folderList) {
           let rel = (f.webkitRelativePath || f.name).replaceAll("\\", "/");
-          if (!rel.startsWith("assets/")) rel = `assets/${rel}`;
+
+          // Smart path handling:
+          // 1. If already starts with assets/, use as-is
+          // 2. If contains assets/ somewhere in the path, extract from that point
+          // 3. Otherwise, use the base path we determined
+          if (!rel.startsWith("assets/")) {
+            const assetsIndex = rel.indexOf("assets/");
+            if (assetsIndex > 0) {
+              // Path contains assets/ but not at start
+              rel = rel.substring(assetsIndex);
+            } else {
+              // Prepend the base path
+              rel = `${basePath}${rel}`;
+            }
+          }
+
+          // Skip .min.jpg files (thumbnails) - we only import full-res versions
+          if (rel.endsWith('.min.jpg') || rel.endsWith('.min.jpeg') || rel.endsWith('.min.png')) {
+            skippedCount++;
+            continue;
+          }
+
+          // Skip if duplicate and we're reloading
+          if (skipDuplicates && existingPaths.has(rel)) {
+            skippedCount++;
+            continue;
+          }
 
           const suggestedAlt = stripExt(f.name).replaceAll("_", " ").replaceAll("-", " ");
 
@@ -965,12 +1211,26 @@
               paddingClass: DEFAULT_PADDING,
             })
           );
+          addedCount++;
         }
 
-        fileInput.value = "";
         folderInput.value = "";
         saveItems();
         renderAll();
+
+        // Show feedback
+        if (skipDuplicates) {
+          alert(`Reload complete!\nAdded: ${addedCount} new images\nSkipped: ${skippedCount} existing images`);
+        }
+      }
+
+      function reloadFolder() {
+        // Trigger folder input click, then process with duplicate checking
+        const folderInput = document.getElementById("folderInput");
+        folderInput.onchange = () => {
+          addSelectedFiles(true);
+        };
+        folderInput.click();
       }
 
       // -------- Export/import
@@ -1038,7 +1298,8 @@
       }
 
       // Wire controls
-      document.getElementById("addSelectedBtn").addEventListener("click", addSelectedFiles);
+      document.getElementById("addSelectedBtn").addEventListener("click", () => addSelectedFiles(false));
+      document.getElementById("reloadBtn").addEventListener("click", reloadFolder);
       document.getElementById("exportBtn").addEventListener("click", exportJson);
       document.getElementById("importInput").addEventListener("change", (e) => {
         const f = e.target.files && e.target.files[0];
@@ -1047,6 +1308,10 @@
       });
       document.getElementById("resetBtn").addEventListener("click", resetAll);
       document.getElementById("addGroupBtn").addEventListener("click", addGroup);
+      document.getElementById("filterGroupSelect").addEventListener("change", (e) => {
+        filterGroupId = e.target.value;
+        renderAll();
+      });
 
       // Init
       initFancybox();
