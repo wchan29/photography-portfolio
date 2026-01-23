@@ -102,7 +102,7 @@
   <!-- Navbar -->
   <div id="header"></div>
   <script>
-    fetch("src/header.html")
+    fetch("./src/header.html")
       .then(response => response.text())
       .then(data => {
         const header = document.getElementById("header");
@@ -126,7 +126,7 @@
   <!-- Footer -->
   <div id="footer"></div>
   <script>
-    fetch("src/footer.html")
+    fetch("./src/footer.html")
       .then(response => response.text())
       .then(data => {
         document.getElementById("footer").innerHTML = data;
@@ -162,7 +162,7 @@
       const status = document.getElementById("galleryStatus");
 
       // Load gallery configuration (lists which JSON files to load)
-      const GALLERY_CONFIG_PATH = "gallery-config.json";
+      const GALLERY_CONFIG_PATH = "./gallery-config.json";
 
       try {
         status.textContent = "Loading galleries…";
